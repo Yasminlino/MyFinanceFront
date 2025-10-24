@@ -1,97 +1,111 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Create from "../Modals/Category/Create";
-import { getCategories } from "../../api/retornoApi/ApiCategory";
-import { deleteCategory } from "../../api/retornoApi/ApiCategory";
+import { getCategories, deleteCategory } from "../../api/retornoApi/ApiCategory";
 import { Alert } from "../functions/alert";
 import { MdDelete } from "react-icons/md";
+import PageHeader from "../../components/PageHeader";
 
 function Categories() {
     const { categories, error } = getCategories();
-
-    if (error) {
-        return <div>Erro ao carregar categorias: {error.message}</div>;
-    }
-
     const [showModalCreate, setShowModalCreate] = useState(false);
     const [showModalUpdate, setShowModalUpdate] = useState(false);
-    const [alert, setAlert] = useState({ type: "", message: "" })
+    const [alert, setAlert] = useState({ type: "", message: "" });
     const [category, setCategory] = useState(null);
 
-    // Handle the update modal
+    if (error) return <div>Erro ao carregar categorias: {error.message}</div>;
+
     const handle = async (funcao, category) => {
-        if(funcao == "create"){
+        if (funcao === "create") {
             setShowModalCreate(true);
-
-        }else if (funcao == "update") {
-            setCategory(category); 
-            setShowModalUpdate(true); 
-
-        } else if (funcao == "delete") {
-            if (window.confirm("Are you sure you want to delete this category?")) {
-                const { categories: Categories, error } = await deleteCategory(category);
-
-                if (Categories) {
-                    window.location.reload(true);
-                    setAlert({ type: "success", message: "Categoria deletada com sucesso!" });  // Corrigido para "success"
-                    setTimeout(() => setAlert({ type: "", message: "" }), 15000);
-                }
-                else if (error){
-                    setAlert({ type: "error", message: "Falha ao deletar categoria. Categoria sendo utilizada em histórico de contas!" });
+        } else if (funcao === "update") {
+            setCategory(category);
+            setShowModalUpdate(true);
+        } else if (funcao === "delete") {
+            if (window.confirm("Tem certeza que deseja excluir?")) {
+                const { categories: ok, error: err } = await deleteCategory(category);
+                if (ok) {
+                    setAlert({ type: "success", message: "Categoria deletada com sucesso!" });
+                    setTimeout(() => window.location.reload(), 800);
+                } else if (err) {
+                    setAlert({
+                        type: "error",
+                        message: "Falha ao deletar. Categoria está vinculada a transações.",
+                    });
                     setTimeout(() => setAlert({ type: "", message: "" }), 15000);
                 }
             }
         }
-
-    }
-
-    // Close the create modal
-    const closeModalCreate = () => {
-        setShowModalCreate(false);
     };
 
-    // Close the update modal
-    const closeModalUpdate = () => {
-        setShowModalUpdate(false);
-    };
+    const closeModalCreate = () => setShowModalCreate(false);
+    const closeModalUpdate = () => setShowModalUpdate(false);
 
     return (
         <div>
             {alert.message && <Alert type={alert.type} message={alert.message} />}
-            <div className="navbar-right" style={{ marginRight: "50px" }}>
-                <button className="btn btn-primary btn-lg" onClick={() => handle("create")}>Criar</button>
-            </div>
-            <div>
-                <h3>Categorias</h3>
-                <table className="table table-striped table-hover">
-                    <thead>
-                        <tr className="info colorwhite">
-                            <th>Id</th>
-                            <th>Name</th>
-                            <th>Status</th>
-                            <th>Delete</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {categories && categories.map((category) => (
-                            <tr key={category.id}>
-                                <td>{category.id}</td>
-                                <td>{category.name}</td>
-                                <td>{category.status}</td>
-                                <td>
-                                    {/* Delete button */}
-                                    <button className="btn btn-danger" onClick={() => handle("delete", category)}>
-                                    <MdDelete />
-                                    </button>
-                                </td>
+
+            <PageHeader
+                pretitle="Cadastros"
+                title="Categorias"
+                secondary={{ label: "Atualizar", onClick: () => window.location.reload() }}
+                primary={{ label: "Nova categoria", onClick: () => handle("create") }}
+            />
+
+            <div className="card">
+                <div className="table-responsive">
+                    {/* se quiser header “grudado”, use: table-responsive table-responsive-sticky + table-sticky abaixo */}
+                    <table className="table card-table table-vcenter table-hover">
+                        <thead>
+                            <tr>
+                                <th className="w-1">ID</th>
+                                <th>Nome</th>
+                                <th>Status</th>
+                                <th className="w-1 text-center">Excluir</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {categories?.map((c) => (
+                                <tr key={c.id}>
+                                    <td>{c.id}</td>
+                                    <td>{c.name}</td>
+                                    <td>
+                                        <span
+                                            className={`badge ${c.status === "Ativo"
+                                                    ? "bg-green"
+                                                    : c.status === "Inativo"
+                                                        ? "bg-secondary"
+                                                        : "bg-muted"
+                                                }`}
+                                        >
+                                            {c.status}
+                                        </span>
+                                    </td>
+                                    <td className="text-center">
+                                        <button
+                                            type="button"
+                                            className="btn btn-icon btn-danger"
+                                            aria-label={`Excluir categoria ${c.name}`}
+                                            onClick={() => handle("delete", c)}
+                                        >
+                                            <MdDelete />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+
+                            {(!categories || categories.length === 0) && (
+                                <tr>
+                                    <td colSpan={4} className="text-center text-secondary">
+                                        Nenhuma categoria encontrada.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            {/* Create Modal */}
             {showModalCreate && <Create closeModal={closeModalCreate} />}
-            {/* Update Modal */}
             {showModalUpdate && <Update category={category} closeModal={closeModalUpdate} />}
         </div>
     );
