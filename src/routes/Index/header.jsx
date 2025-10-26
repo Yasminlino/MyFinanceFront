@@ -49,28 +49,28 @@ export default function Header() {
             <li className="nav-item">
               <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
                 <span className="me-2"><IconHome size={20} /></span>
-                <span>Home</span>
+                <span>Página Inicial</span>
               </NavLink>
             </li>
 
             <li className="nav-item">
               <NavLink to="/Category" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
                 <span className="me-2"><IconCategory size={20} /></span>
-                <span>Category</span>
+                <span>Categorias</span>
               </NavLink>
             </li>
 
             <li className="nav-item">
               <NavLink to="/Account" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
                 <span className="me-2"><IconCreditCard size={20} /></span>
-                <span>Account</span>
+                <span>Contas</span>
               </NavLink>
             </li>
 
             <li className="nav-item">
               <NavLink to="/Transaction" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
                 <span className="me-2"><IconCreditCard size={20} /></span>
-                <span>Transaction</span>
+                <span>Transações</span>
               </NavLink>
             </li>
           </ul>

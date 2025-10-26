@@ -10,3 +10,7 @@
 .page-body{
     margin-top: 1rem!important
 }
+
+.main, .body, .page{
+    background-color: #f5f7fa!important;
+}

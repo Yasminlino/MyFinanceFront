@@ -22,8 +22,8 @@ import { MdDelete } from "react-icons/md";
 import { GrUpdate } from "react-icons/gr";
 import CreateTransaction from "../Modals/Transaction/Create";
 import { FaEdit } from "react-icons/fa";
-import { FiCalendar, FiLock, FiUnlock } from "react-icons/fi";
-import { Tooltip } from "bootstrap"; // já vem com bootstrap bundle
+import { FiCalendar, FiLock, FiUnlock, FiChevronDown } from "react-icons/fi";
+import { Tooltip, Collapse } from "bootstrap"; // já vem com bootstrap bundle
 
 export default function Transaction() {
   // ---- Constantes de UI / Dados
@@ -46,16 +46,33 @@ export default function Transaction() {
   const lockedById = useMemo(() => {
     const map = new Map();
     transactionMonthly.forEach((t) => {
-      map.set(t.id, t.status !== "PENDENTE");
+      map.set(t.id, t.statusSalvo !== "PENDENTE" && !t.desbloqueiaCampos);
     });
     return map;
   }, [transactionMonthly]);
 
+  // ...existing code...
   useEffect(() => {
-    // habilita tooltips de toda a página
+    // tooltips
     const triggers = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-    const instances = [...triggers].map(el => new Tooltip(el));
-    return () => instances.forEach(i => i.dispose());
+    const tips = [...triggers].map((el) => new Tooltip(el));
+
+    // collapse (garante que, em SPA, os targets sejam inicializados)
+    const collapseBtns = document.querySelectorAll('[data-bs-toggle="collapse"]');
+    const collapseInstances = [];
+    collapseBtns.forEach((btn) => {
+      const selector = btn.getAttribute('data-bs-target') || btn.getAttribute('href');
+      const target = selector && document.querySelector(selector);
+      if (target) {
+        // não fazer toggle automático, só garantir a instância
+        collapseInstances.push(new Collapse(target, { toggle: false }));
+      }
+    });
+
+    return () => {
+      tips.forEach((t) => t.dispose());
+      collapseInstances.forEach((c) => c.dispose && c.dispose());
+    };
   }, []);
 
   // ---- Efeitos
@@ -70,7 +87,9 @@ export default function Transaction() {
           categoryId: category.categoryId,
           idAccount: account.id,
           status: transaction.status,
+          statusSalvo: transaction.status,
           categoryName: category.categoryName,
+          desbloqueiaCampos: false,
         }))
       )
     );
@@ -157,7 +176,16 @@ export default function Transaction() {
 
     if (!error && dados) {
       setTransactionMonthly((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, status: dados.status } : t))
+        prev.map((t) =>
+          t.id === id
+            ? {
+              ...t,
+              status: dados.status,
+              statusSalvo: dados.status,
+              desbloqueiaCampos: dados.status === "PENDENTE" ? t.desbloqueiaCampos : false,
+            }
+            : t
+        )
       );
       setAlert({ type: "success", message: "Transação atualizada com sucesso!" });
       setTimeout(() => setAlert({ type: "", message: "" }), 5000);
@@ -185,7 +213,7 @@ export default function Transaction() {
 
   const unlock = (id) => {
     setTransactionMonthly((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, status: "PENDENTE" } : t))
+      prev.map((t) => (t.id === id ? { ...t, desbloqueiaCampos: true } : t))
     );
   };
 
@@ -206,7 +234,7 @@ export default function Transaction() {
       {alert.message && <Alert type={alert.type} message={alert.message} />}
 
       {/* ======= HEADER ======= */}
-      <div className="page-header d-print-none sticky-top bg-body border-bottom">
+      <div className="">
         <div className="container-xl">
           <div className="row g-2 align-items-center">
             {/* Esquerda menor */}
@@ -218,6 +246,7 @@ export default function Transaction() {
             {/* Direita maior */}
             <div className="col-12 col-lg-8 d-print-none">
               <div className="d-flex justify-content-end gap-2 flex-wrap">
+                {/* input mês continua sempre visível */}
                 <div className="input-icon">
                   <input
                     className="form-control"
@@ -229,23 +258,36 @@ export default function Transaction() {
                   />
                 </div>
 
-                <div className="btn-list">
-                  <button className="btn btn-primary gap-2 btn-lg-icon" onClick={() => handleToolbar("add")}>
-                    <MdFormatListBulletedAdd /> Adicionar em lote
-                  </button>
-                </div>
-                <div className="btn-list">
-                  <button className="btn btn-primary gap-2 btn-lg-icon" onClick={() => handleToolbar("create")}>
-                    <RiStickyNoteAddFill /> Nova transação
-                  </button>
-                </div>
-                <div className="btn-list">
-                  <button className="btn btn-outline-secondary gap-2 btn-lg-icon" onClick={() => handleToolbar("refresh")}>
-                    <GrUpdate />
-                  </button>
+                {/* botão toggle para mostrar/ocultar ações */}
+                <button
+                  className="btn btn-outline-secondary"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#toolbarCollapse"
+                  aria-expanded="false"
+                  aria-controls="toolbarCollapse"
+                  title="Mostrar/ocultar ações"
+                >
+                  Ações
+                </button>
+
+                {/* ações colapsáveis */}
+                <div className="collapse" id="toolbarCollapse">
+                  <div className="btn-list">
+                    <button className="btn btn-primary gap-2 btn-lg-icon" onClick={() => handleToolbar("add")}>
+                      <MdFormatListBulletedAdd /> Adicionar em lote
+                    </button>
+                    <button className="btn btn-primary gap-2 btn-lg-icon" onClick={() => handleToolbar("create")}>
+                      <RiStickyNoteAddFill /> Nova transação
+                    </button>
+                    <button className="btn btn-outline-secondary gap-2 btn-lg-icon" onClick={() => handleToolbar("refresh")}>
+                      <GrUpdate /> Atualizar
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
 
         </div>
@@ -273,9 +315,9 @@ export default function Transaction() {
             </div>
           </div>
         )}
-
         {/* Categorias */}
         {transactions?.map((category) => {
+          const collapseId = `cat-${category.categoryId}`;
           const rows = transactionMonthly.filter(
             (c) => c.categoryId === category.categoryId
           );
@@ -283,9 +325,23 @@ export default function Transaction() {
           return (
             <div className="card card-stacked mb-3" key={category.categoryId}>
               <div className="card-header justify-content-between align-items-center">
-                <h3 className="card-title m-0">
-                  {String(category.categoryName || "").toUpperCase()}
-                </h3>
+                <div className="d-flex align-items-center gap-2">
+                  <button
+                    className="btn btn-icon btn-outline-secondary btn-sm"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target={`#${collapseId}`}
+                    aria-expanded="false"
+                    aria-controls={collapseId}
+                    title="Mostrar/ocultar"
+                  >
+                    <FiChevronDown />
+                  </button>
+                  <h3 className="card-title m-0">
+                    {String(category.categoryName || "").toUpperCase()}
+                  </h3>
+                </div>
+
                 <div className="card-actions text-end">
                   <div className="text-muted small">Total da categoria</div>
                   <div className="fw-bold fs-5">
@@ -294,81 +350,207 @@ export default function Transaction() {
                 </div>
               </div>
 
-              {/* Tabela (desktop) */}
-              <div className="table-responsive d-none d-lg-block">
-                <table className="table card-table table-vcenter">
-                  <thead className="bg-body-tertiary sticky-top">
-                    <tr>
-                      <th>Conta</th>
-                      <th className="text-nowrap">Valor</th>
-                      <th className="text-nowrap">Vencimento</th>
-                      <th className="text-nowrap">Status</th>
-                      <th className="w-1 text-center">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.length > 0 ? (
-                      rows.map((account) => {
-                        const readOnly = lockedById.get(account.id);
+              {/* CONTEÚDO COLAPSÁVEL */}
+              <div className="collapse show" id={collapseId}>
+                {/* Tabela (desktop) */}
+                <div className="table-responsive d-none d-lg-block">
+                  <table className="table card-table table-vcenter">
+                    <thead className="bg-body-tertiary sticky-top">
+                      <tr>
+                        <th>Conta</th>
+                        <th className="text-nowrap">Valor</th>
+                        <th className="text-nowrap">Vencimento</th>
+                        <th className="text-nowrap">Status</th>
+                        <th className="w-1 text-center">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.length > 0 ? (
+                        rows.map((account) => {
+                          const readOnly = lockedById.get(account.id);
+                          return (
+                            <tr key={account.id} id={account.id}>
+                              <td className="text-uppercase fw-medium">
+                                {String(account.name || "").toUpperCase()}
+                              </td>
 
-                        return (
-                          <tr key={account.id} id={account.id}>
-                            <td className="text-uppercase fw-medium">
+                              <td style={{ maxWidth: 220 }}>
+                                <div className="input-group input-group-sm">
+                                  <span className="input-group-text">R$</span>
+                                  <input
+                                    id={`value${account.id}`}
+                                    onChange={handleChange("value", account.id)}
+                                    className="form-control"
+                                    type="text"
+                                    value={formatCurrency(account.value)}
+                                    readOnly={readOnly}
+                                    disabled={readOnly}
+                                    aria-label={`Valor da conta ${account.name}`}
+                                  />
+                                </div>
+                              </td>
+
+                              <td style={{ maxWidth: 220 }}>
+                                <input
+                                  id={`month${account.id}`}
+                                  onChange={handleChange("month", account.id)}
+                                  value={formatDate(account.month)}
+                                  className="form-control form-control-sm"
+                                  type="date"
+                                  readOnly={readOnly}
+                                  disabled={readOnly}
+                                  aria-label={`Vencimento da conta ${account.name}`}
+                                />
+                              </td>
+
+                              <td style={{ minWidth: 220 }}>
+                                {readOnly ? (
+                                  <div className="d-flex align-items-center gap-2">
+                                    <span className="badge bg-success-subtle text-success-emphasis">
+                                      <FiLock className="me-1" /> {account.status}
+                                    </span>
+                                    <button
+                                      className="btn btn-icon btn-soft-muted ms-1"
+                                      onClick={() => unlock(account.id)}
+                                      title="Desbloquear para edição"
+                                      data-bs-toggle="tooltip"
+                                    >
+                                      <FiUnlock />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <select
+                                    id={`status${account.id}`}
+                                    onChange={handleChange("status", account.id)}
+                                    value={account.status}
+                                    className="form-select form-select-sm"
+                                    aria-label={`Status da conta ${account.name}`}
+                                  >
+                                    {STATUS.map((s, i) => (
+                                      <option key={i} value={s}>
+                                        {s}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
+                              </td>
+
+                              <td className="text-center">
+                                <div className="btn-list d-inline-flex">
+                                  <button
+                                    id={`btnSave${account.id}`}
+                                    onClick={() => handleSave(account.id)}
+                                    className="btn btn-icon btn-soft-success"
+                                    title="Salvar"
+                                    aria-label="Salvar"
+                                    data-bs-toggle="tooltip"
+                                    disabled={readOnly}
+                                  >
+                                    <VscSaveAll />
+                                  </button>
+
+                                  <button
+                                    id={`btnDelete${account.id}`}
+                                    onClick={() => handleDelete(account.id)}
+                                    className="btn btn-icon btn-soft-danger"
+                                    title="Excluir"
+                                    aria-label="Excluir"
+                                    data-bs-toggle="tooltip"
+                                  >
+                                    <MdDelete />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="text-center text-secondary py-4">
+                            Nenhuma conta registrada neste mês
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Cards (mobile) */}
+                <div className="d-lg-none p-3">
+                  {rows.length > 0 ? (
+                    rows.map((account) => {
+                      const readOnly = lockedById.get(account.id);
+                      return (
+                        <div
+                          key={account.id}
+                          className={`border rounded-3 p-3 mb-3 ${readOnly ? "bg-body-tertiary" : ""
+                            }`}
+                        >
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <h4 className="h6 m-0 text-uppercase">
                               {String(account.name || "").toUpperCase()}
-                            </td>
+                            </h4>
+                            <div className="d-flex align-items-center gap-2">
+                              {readOnly ? (
+                                <span className="badge bg-success-subtle text-success-emphasis">
+                                  <FiLock className="me-1" />
+                                  {account.status}
+                                </span>
+                              ) : (
+                                renderStatus(account.status)
+                              )}
+                              <button
+                                className="btn btn-link p-0 text-muted"
+                                onClick={() => unlock(account.id)}
+                                title="Desbloquear"
+                              >
+                                <FiUnlock />
+                              </button>
+                            </div>
+                          </div>
 
-                            <td style={{ maxWidth: 220 }}>
+                          <div className="row g-2">
+                            <div className="col-6">
+                              <label className="form-label mb-1 small">Valor</label>
                               <div className="input-group input-group-sm">
                                 <span className="input-group-text">R$</span>
                                 <input
-                                  id={`value${account.id}`}
-                                  onChange={handleChange("value", account.id)}
-                                  className="form-control"
                                   type="text"
                                   value={formatCurrency(account.value)}
-                                  readOnly={readOnly}
+                                  onChange={handleChange("value", account.id)}
                                   disabled={readOnly}
-                                  aria-label={`Valor da conta ${account.name}`}
+                                  className="form-control"
                                 />
                               </div>
-                            </td>
-
-                            <td style={{ maxWidth: 220 }}>
+                            </div>
+                            <div className="col-6">
+                              <label className="form-label mb-1 small">Vencimento</label>
                               <input
-                                id={`month${account.id}`}
-                                onChange={handleChange("month", account.id)}
-                                value={formatDate(account.month)}
-                                className="form-control form-control-sm"
                                 type="date"
-                                readOnly={readOnly}
+                                value={formatDate(account.month)}
+                                onChange={handleChange("month", account.id)}
                                 disabled={readOnly}
-                                aria-label={`Vencimento da conta ${account.name}`}
+                                className="form-control form-control-sm"
                               />
-                            </td>
-
-                            <td style={{ minWidth: 220 }}>
+                            </div>
+                            <div className="col-12">
+                              <label className="form-label mb-1 small">Status</label>
                               {readOnly ? (
                                 <div className="d-flex align-items-center gap-2">
-                                  <span className="badge bg-success-subtle text-success-emphasis">
-                                    <FiLock className="me-1" /> {account.status}
-                                  </span>
+                                  {renderStatus(account.status)}
                                   <button
-                                    className="btn btn-icon btn-soft-muted ms-1"
+                                    className="btn btn-link p-0 text-muted"
                                     onClick={() => unlock(account.id)}
-                                    title="Desbloquear para edição"
-                                    data-bs-toggle="tooltip"
+                                    title="Desbloquear"
                                   >
                                     <FiUnlock />
                                   </button>
-
                                 </div>
                               ) : (
                                 <select
-                                  id={`status${account.id}`}
-                                  onChange={handleChange("status", account.id)}
                                   value={account.status}
+                                  onChange={handleChange("status", account.id)}
                                   className="form-select form-select-sm"
-                                  aria-label={`Status da conta ${account.name}`}
                                 >
                                   {STATUS.map((s, i) => (
                                     <option key={i} value={s}>
@@ -377,212 +559,65 @@ export default function Transaction() {
                                   ))}
                                 </select>
                               )}
-                            </td>
-
-                            <td className="text-center">
-                              <div className="btn-list d-inline-flex">
-                                <button
-                                  id={`btnSave${account.id}`}
-                                  onClick={() => handleSave(account.id)}
-                                  className="btn btn-icon btn-soft-success"
-                                  title="Salvar"
-                                  aria-label="Salvar"
-                                  data-bs-toggle="tooltip"
-                                  disabled={readOnly}
-                                >
-                                  <VscSaveAll />
-                                </button>
-
-                                <button
-                                  id={`btnEdit${account.id}`}
-                                  onClick={() => unlock(account.id)}
-                                  className="btn btn-icon btn-soft-secondary"
-                                  title="Editar"
-                                  aria-label="Editar"
-                                  data-bs-toggle="tooltip"
-                                  disabled={!readOnly}
-                                >
-                                  <FaEdit />
-                                </button>
-
-                                <button
-                                  id={`btnDelete${account.id}`}
-                                  onClick={() => handleDelete(account.id)}
-                                  className="btn btn-icon btn-soft-danger"
-                                  title="Excluir"
-                                  aria-label="Excluir"
-                                  data-bs-toggle="tooltip"
-                                >
-                                  <MdDelete />
-                                </button>
-                              </div>
-                            </td>
-
-                          </tr>
-                        );
-                      })
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="text-center text-secondary py-4">
-                          Nenhuma conta registrada neste mês
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Cards (mobile) */}
-              <div className="d-lg-none p-3">
-                {rows.length > 0 ? (
-                  rows.map((account) => {
-                    const readOnly = lockedById.get(account.id);
-                    return (
-                      <div
-                        key={account.id}
-                        className={`border rounded-3 p-3 mb-3 ${readOnly ? "bg-body-tertiary" : ""
-                          }`}
-                      >
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <h4 className="h6 m-0 text-uppercase">
-                            {String(account.name || "").toUpperCase()}
-                          </h4>
-                          <div className="d-flex align-items-center gap-2">
-                            {readOnly ? (
-                              <span className="badge bg-success-subtle text-success-emphasis">
-                                <FiLock className="me-1" />
-                                {account.status}
-                              </span>
-                            ) : (
-                              renderStatus(account.status)
-                            )}
-                            <button
-                              className="btn btn-link p-0 text-muted"
-                              onClick={() => unlock(account.id)}
-                              title="Desbloquear"
-                            >
-                              <FiUnlock />
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="row g-2">
-                          <div className="col-6">
-                            <label className="form-label mb-1 small">Valor</label>
-                            <div className="input-group input-group-sm">
-                              <span className="input-group-text">R$</span>
-                              <input
-                                type="text"
-                                value={formatCurrency(account.value)}
-                                onChange={handleChange("value", account.id)}
+                            </div>
+                            <div className="col-12 d-flex justify-content-end gap-2">
+                              <button
+                                onClick={() => handleSave(account.id)}
+                                className="btn btn-icon btn-soft-success btn-xs"
                                 disabled={readOnly}
-                                className="form-control"
-                              />
+                                title="Salvar"
+                                data-bs-toggle="tooltip"
+                              >
+                                <VscSaveAll />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(account.id)}
+                                className="btn btn-icon btn-soft-danger btn-xs"
+                                title="Excluir"
+                                data-bs-toggle="tooltip"
+                              >
+                                <MdDelete />
+                              </button>
                             </div>
                           </div>
-                          <div className="col-6">
-                            <label className="form-label mb-1 small">Vencimento</label>
-                            <input
-                              type="date"
-                              value={formatDate(account.month)}
-                              onChange={handleChange("month", account.id)}
-                              disabled={readOnly}
-                              className="form-control form-control-sm"
-                            />
-                          </div>
-                          <div className="col-12">
-                            <label className="form-label mb-1 small">Status</label>
-                            {readOnly ? (
-                              <div className="d-flex align-items-center gap-2">
-                                {renderStatus(account.status)}
-                                <button
-                                  className="btn btn-link p-0 text-muted"
-                                  onClick={() => unlock(account.id)}
-                                  title="Desbloquear"
-                                >
-                                  <FiUnlock />
-                                </button>
-                              </div>
-                            ) : (
-                              <select
-                                value={account.status}
-                                onChange={handleChange("status", account.id)}
-                                className="form-select form-select-sm"
-                              >
-                                {STATUS.map((s, i) => (
-                                  <option key={i} value={s}>
-                                    {s}
-                                  </option>
-                                ))}
-                              </select>
-                            )}
-                          </div>
-                          <div className="col-12 d-flex justify-content-end gap-2">
-                            <button
-                              onClick={() => handleSave(account.id)}
-                              className="btn btn-icon btn-soft-success btn-xs"
-                              disabled={readOnly}
-                              title="Salvar"
-                              data-bs-toggle="tooltip"
-                            >
-                              <VscSaveAll />
-                            </button>
-                            <button
-                              onClick={() => unlock(account.id)}
-                              className="btn btn-icon btn-soft-secondary btn-xs"
-                              disabled={!readOnly}
-                              title="Editar"
-                              data-bs-toggle="tooltip"
-                            >
-                              <FaEdit />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(account.id)}
-                              className="btn btn-icon btn-soft-danger btn-xs"
-                              title="Excluir"
-                              data-bs-toggle="tooltip"
-                            >
-                              <MdDelete />
-                            </button>
-                          </div>
                         </div>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div className="text-center text-secondary py-3">
-                    Nenhuma conta registrada neste mês
-                  </div>
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="card-footer d-flex align-items-center justify-content-between">
-                <div className="text-muted small">
-                  {rows.length} {rows.length === 1 ? "item" : "itens"}
+                      );
+                    })
+                  ) : (
+                    <div className="text-center text-secondary py-3">
+                      Nenhuma conta registrada neste mês
+                    </div>
+                  )}
                 </div>
-                <div className="d-flex align-items-center gap-2">
-                  <span className="text-muted">Total</span>
-                  <span className="badge bg-primary-lt fs-5">
-                    {sumByCategory(category.categoryId)}
-                  </span>
+
+                {/* Footer */}
+                <div className="card-footer d-flex align-items-center justify-content-between">
+                  <div className="text-muted small">
+                    {rows.length} {rows.length === 1 ? "item" : "itens"}
+                  </div>
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="text-muted">Total</span>
+                    <span className="badge bg-primary-lt fs-5">
+                      {sumByCategory(category.categoryId)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           );
         })}
+
+        {showModalAdd && (
+          <AddTransactionMonthly
+            date={formatDateMonth(document.getElementById("dateFilter").value)}
+            closeModal={() => setShowModalAdd(false)}
+          />
+        )}
+
+        {showModalCreate && (
+          <CreateTransaction closeModal={() => setShowModalCreate(false)} />
+        )}
       </div>
-
-      {showModalAdd && (
-        <AddTransactionMonthly
-          date={formatDateMonth(document.getElementById("dateFilter").value)}
-          closeModal={() => setShowModalAdd(false)}
-        />
-      )}
-
-      {showModalCreate && (
-        <CreateTransaction closeModal={() => setShowModalCreate(false)} />
-      )}
     </div>
   );
 }

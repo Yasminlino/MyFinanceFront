@@ -91,8 +91,8 @@ function Create({ closeModal }) {
                     {error && <div className="alert alert-danger">{error}</div>}
                     {/* {success && <div className="alert alert-success">Conta atualizada com sucesso!</div>} */}
                     <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={handleClose}>Close</button>
-                        <button type="button" className="btn btn-primary" onClick={handleSave}>Save changes</button>
+                        <button type="button" className="btn btn-secondary" onClick={handleClose}>Cancelar</button>
+                        <button type="button" className="btn btn-primary" onClick={handleSave}>Salvar</button>
                     </div>
                 </div>
             </div>

@@ -78,7 +78,7 @@ export async function updateTransaction(account) {
     const jsonAccount =
     {
         "id": account.id,
-        "date": account.date,
+        "date": account.month,
         "name": account.name,
         "value": account.value,
         "idAccount": account.idAccount,
