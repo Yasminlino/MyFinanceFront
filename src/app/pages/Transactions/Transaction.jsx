@@ -15,7 +15,7 @@ import {
   GetTransactionGroupingByDate,
 } from "../../../services/api/retornoApi/ApiTransaction";
 
-import { VscSaveAll } from "react-icons/vsc";
+import { VscSaveAll, VscFoldDown } from "react-icons/vsc";
 import { MdFormatListBulletedAdd } from "react-icons/md";
 import { RiStickyNoteAddFill } from "react-icons/ri";
 import { MdDelete } from "react-icons/md";
@@ -268,19 +268,20 @@ export default function Transaction() {
                   aria-controls="toolbarCollapse"
                   title="Mostrar/ocultar ações"
                 >
-                  Ações
+                  <VscFoldDown />
                 </button>
 
-                {/* ações colapsáveis */}
-                <div className="collapse" id="toolbarCollapse">
+              </div>
+              <div className="collapse" id="toolbarCollapse">
+                <div className="d-flex justify-content-end mt-2">
                   <div className="btn-list">
-                    <button className="btn btn-primary gap-2 btn-lg-icon" onClick={() => handleToolbar("add")}>
+                    <button className="btn btn-primary ml-2 btn-lg-icon" onClick={() => handleToolbar("add")}>
                       <MdFormatListBulletedAdd /> Adicionar em lote
                     </button>
-                    <button className="btn btn-primary gap-2 btn-lg-icon" onClick={() => handleToolbar("create")}>
+                    <button className="btn btn-primary m-2 btn-lg-icon" onClick={() => handleToolbar("create")}>
                       <RiStickyNoteAddFill /> Nova transação
                     </button>
-                    <button className="btn btn-outline-secondary gap-2 btn-lg-icon" onClick={() => handleToolbar("refresh")}>
+                    <button className="btn btn-outline-secondary ml-2 btn-lg-icon" onClick={() => handleToolbar("refresh")}>
                       <GrUpdate /> Atualizar
                     </button>
                   </div>
@@ -343,7 +344,7 @@ export default function Transaction() {
                 </div>
 
                 <div className="card-actions text-end">
-                  <div className="text-muted small">Total da categoria</div>
+                  <div className="text-muted small">Valor Previsto</div>
                   <div className="fw-bold fs-5">
                     {sumByCategory(category.categoryId)}
                   </div>
@@ -591,6 +592,7 @@ export default function Transaction() {
                 </div>
 
                 {/* Footer */}
+              </div>
                 <div className="card-footer d-flex align-items-center justify-content-between">
                   <div className="text-muted small">
                     {rows.length} {rows.length === 1 ? "item" : "itens"}
@@ -602,7 +604,6 @@ export default function Transaction() {
                     </span>
                   </div>
                 </div>
-              </div>
             </div>
           );
         })}

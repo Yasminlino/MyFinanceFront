@@ -90,79 +90,81 @@ function Update({ account, closeModal }) {
     };
 
     return (
-        <div className="modal show" tabIndex="-1" role="dialog" style={{ display: 'block' }}>
-            <div className="modal-dialog" role="document">
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <button type="button" className="close" aria-label="Close" onClick={closeModal}>
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        <h4 className="modal-title">Editar Conta</h4>
-                    </div>
-                    <div className="modal-body">
-                        <label>Id</label>
-                        <input
-                            type="text"
-                            id="id"
-                            value={account.id}
+        <>
+            <div className="modal-backdrop show my-backdrop" />
+            <div className="modal show" tabIndex="-1" role="dialog" style={{ display: 'block' }}>
+                <div className="modal-dialog" role="document">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h4 className="modal-title m-0">Editar Conta</h4>
+                            <button type="button" className="btn btn-close" aria-label="Close" onClick={closeModal} />
 
-                            disabled
-                            className="form-control"
-                        />
-                        <br />
-                        <label>Nome</label>
-                        <input
-                            type="text"
-                            value={dados.name}
-                            onChange={handleChange("name")}
-                            id="name"
-                            className="form-control"
-                            required
-                        />
-                        <br />
-                        <label>Value</label>
-                        <input
-                            type="text"
-                            value={dados.value}
-                            onChange={handleChange("value")}
-                            id="value"
-                            className="form-control"
-                            required
-                        />
-                        <br />
+                        </div>
+                        <div className="modal-body">
+                            <label>Id</label>
+                            <input
+                                type="text"
+                                id="id"
+                                value={account.id}
 
-                        <label className="control-label">Category</label>
-                        <select
-                            className="form-control"
-                            id="categoryid"
-                            value={dados.categoryid}  // Usando categoryid para o valor da categoria
-                            onChange={handleChange("categoryid")}
-                        >
-                            <option value=""></option>
-                            {categories && categories.map((category) => (
-                                <option key={category.id} id={category.id} value={category.id}>{category.name}</option>
-                            ))}
-                        </select>
-                    </div>
+                                disabled
+                                className="form-control"
+                            />
+                            <br />
+                            <label>Nome</label>
+                            <input
+                                type="text"
+                                value={dados.name}
+                                onChange={handleChange("name")}
+                                id="name"
+                                className="form-control"
+                                required
+                            />
+                            <br />
+                            <label>Value</label>
+                            <input
+                                type="text"
+                                value={dados.value}
+                                onChange={handleChange("value")}
+                                id="value"
+                                className="form-control"
+                                required
+                            />
+                            <br />
 
-                    {/* Exibindo erros ou sucesso */}
-                    {error && <div className="alert alert-danger">{error}</div>}
-                    {success && <div className="alert alert-success">Conta atualizada com sucesso!</div>}
+                            <label className="control-label">Category</label>
+                            <select
+                                className="form-control"
+                                id="categoryid"
+                                value={dados.categoryid}  // Usando categoryid para o valor da categoria
+                                onChange={handleChange("categoryid")}
+                            >
+                                <option value=""></option>
+                                {categories && categories.map((category) => (
+                                    <option key={category.id} id={category.id} value={category.id}>{category.name}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={closeModal}>Fechar</button>
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={handleSave}
-                            disabled={loading}
-                        >
-                            {loading ? "Salvando..." : "Salvar alterações"}
-                        </button>
+                        {/* Exibindo erros ou sucesso */}
+                        {error && <div className="alert alert-danger">{error}</div>}
+                        {success && <div className="alert alert-success">Conta atualizada com sucesso!</div>}
+
+                        <div className="modal-footer">
+                            <button type="button" className="btn btn-secondary" onClick={closeModal}>Fechar</button>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={handleSave}
+                                disabled={loading}
+                            >
+                                {loading ? "Salvando..." : "Salvar alterações"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 

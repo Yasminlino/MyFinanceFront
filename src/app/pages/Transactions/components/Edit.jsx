@@ -76,10 +76,10 @@ function Edit({ account, closeModal }) {
         setSuccess(false);
 
         const updatedAccount = { id: account.id, ...dados };
-        updatedAccount.value = removeFormatCurrency(updatedAccount.value); 
-        updatedAccount.idAccount = account.idAccount; 
+        updatedAccount.value = removeFormatCurrency(updatedAccount.value);
+        updatedAccount.idAccount = account.idAccount;
 
-        const { account: data, error }  = await updateTransaction(updatedAccount); 
+        const { account: data, error } = await updateTransaction(updatedAccount);
 
 
         if (data) {
@@ -95,79 +95,80 @@ function Edit({ account, closeModal }) {
     };
 
     return (
-        <div className="modal show" tabIndex="-1" role="dialog" style={{ display: 'block' }}>
-            <div className="modal-dialog" role="document">
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <button type="button" className="close" aria-label="Close" onClick={closeModal}>
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        <h4 className="modal-title">Editar Conta</h4>
-                    </div>
-                    <div className="modal-body">
-                        <label>Nome</label>
-                        <input
-                            type="text"
-                            value={dados.name}
-                            onChange={handleChange("name")}
-                            id="name"
-                            className="form-control"
-                            required
-                        />
-                        <br />
-                        <label>Value</label>
-                        <input
-                            type="text"
-                            value={dados.value}
-                            onChange={handleChange("value")}
-                            id="value"
-                            className="form-control"
-                            required
-                        />
-                        <br />
+        <>
+            <div className="modal-backdrop show my-backdrop" />
+            <div className="modal show" tabIndex="-1" role="dialog" style={{ display: 'block' }}>
+                <div className="modal-dialog" role="document">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h4 className="modal-title m-0">Editar Conta</h4>
+                            <button type="button" className="btn btn-close" aria-label="Close" onClick={closeModal} />
+                        </div>
+                        <div className="modal-body">
+                            <label>Nome</label>
+                            <input
+                                type="text"
+                                value={dados.name}
+                                onChange={handleChange("name")}
+                                id="name"
+                                className="form-control"
+                                required
+                            />
+                            <br />
+                            <label>Value</label>
+                            <input
+                                type="text"
+                                value={dados.value}
+                                onChange={handleChange("value")}
+                                id="value"
+                                className="form-control"
+                                required
+                            />
+                            <br />
 
-                        <label className="control-label">DueDate</label>
-                        <input
-                            type="date"
-                            value={dados.date ? formatDate(dados.date) : ""}
-                            onChange={handleChange("date")}
-                            id="date"
-                            className="form-control"
-                            required
-                        />
-                        <br />
-                        <label className="control-label">Status</label>
-                        <select
-                            className="form-control"
-                            id="status"
-                            value={dados.status}  // Usando categoryid para o valor da categoria
-                            onChange={handleChange("status")}
-                        >
-                            {status && status.map((month, index) => (
-                                <option key={index} value={month}>{month}</option>
-                            ))}
-                        </select>
-                    </div>
+                            <label className="control-label">Data Vencimeto</label>
+                            <input
+                                type="date"
+                                value={dados.date ? formatDate(dados.date) : ""}
+                                onChange={handleChange("date")}
+                                id="date"
+                                className="form-control"
+                                required
+                            />
+                            <br />
+                            <label className="control-label">Status</label>
+                            <select
+                                className="form-control"
+                                id="status"
+                                value={dados.status}  // Usando categoryid para o valor da categoria
+                                onChange={handleChange("status")}
+                            >
+                                {status && status.map((month, index) => (
+                                    <option key={index} value={month}>{month}</option>
+                                ))}
+                            </select>
+                        </div>
 
-                    {/* Exibindo erros ou sucesso */}
-                    {error && <div className="alert alert-danger">{error}</div>}
-                    {success && <div className="alert alert-success">Conta atualizada com sucesso!</div>}
+                        {/* Exibindo erros ou sucesso */}
+                        {error && <div className="alert alert-danger">{error}</div>}
+                        {success && <div className="alert alert-success">Conta atualizada com sucesso!</div>}
 
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={closeModal}>Fechar</button>
-                        <button
-                            type="button"
-                            className="btn btn-primary"
-                            onClick={handleSave}
-                            disabled={loading}
-                        >
-                            {loading ? "Salvando..." : "Edit Account"}
-                        </button>
+                        <div className="modal-footer">
+                            <button type="button" className="btn btn-secondary" onClick={closeModal}>Fechar</button>
+                            <button
+                                type="button"
+                                className="btn btn-primary"
+                                onClick={handleSave}
+                                disabled={loading}
+                            >
+                                {loading ? "Salvando..." : "Edit Account"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
+            </>
+            );
 }
 
-export default Edit;
+            export default Edit;

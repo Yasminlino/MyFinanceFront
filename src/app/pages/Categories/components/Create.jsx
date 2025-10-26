@@ -33,7 +33,7 @@ function Create({ closeModal }) {
             isValid = true;
         }
 
-        const { categories: createCategories, error } = await createCategory({dataCreated});
+        const { categories: createCategories, error } = await createCategory({ dataCreated });
 
         if (createCategories) {
             window.location.reload(true);
@@ -49,54 +49,55 @@ function Create({ closeModal }) {
     }
 
     return (
-        <div className="modal show" tabIndex="-1" role="dialog" style={{ display: 'block' }}>
-            <div className="modal-dialog" role="document">
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <button type="button" className="close" data-dismiss="modal" aria-label="Close" onClick={handleClose}>
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        <h4>Create Category</h4>
-                    </div>
-                    <div className="modal-body">
-                        <form action="" className="form-horizontal">
-                            <fieldset>
-                                <div className="form-group">
-                                    <label >Name</label>
-                                    <input
-                                        type="text"
-                                        id="name"
-                                        className="form-control"
-                                        required
-                                        placeholder="Name Category"
-                                        value={dataCreated.name}  // Bind input value to state
-                                        onChange={handleChange}
-                                    />
-                                    <label className="control-label">SubCategory</label>
-                                    <select
-                                        className="form-control"
-                                        id="subCategory"
-                                        placeholder="SubCategory"
-                                        value={dataCreated.subCategory}
-                                        onChange={handleChange}
-                                    >
-                                        <option value=""></option>
-                                        <option value="Ativo">Ativo</option>
-                                        <option value="Passivo">Passivo</option>
-                                    </select>
-                                </div>
-                            </fieldset>
-                        </form>
-                    </div>
-                    {error && <div className="alert alert-danger">{error}</div>}
-                    {/* {success && <div className="alert alert-success">Conta atualizada com sucesso!</div>} */}
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={handleClose}>Cancelar</button>
-                        <button type="button" className="btn btn-primary" onClick={handleSave}>Salvar</button>
+        <>
+            <div className="modal-backdrop show my-backdrop" />
+            <div className="modal show" tabIndex="-1" role="dialog" style={{ display: 'block' }}>
+                <div className="modal-dialog" role="document">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h4 className="modal-title m-0">Criar nova categoria</h4>
+                            <button type="button" className="btn btn-close" aria-label="Close" onClick={handleClose} />
+                        </div>
+                        <div className="modal-body">
+                            <form action="" className="form-horizontal">
+                                <fieldset>
+                                    <div className="form-group">
+                                        <label >Name</label>
+                                        <input
+                                            type="text"
+                                            id="name"
+                                            className="form-control"
+                                            required
+                                            placeholder="Name Category"
+                                            value={dataCreated.name}  // Bind input value to state
+                                            onChange={handleChange}
+                                        />
+                                        <label className="control-label">SubCategory</label>
+                                        <select
+                                            className="form-control"
+                                            id="subCategory"
+                                            placeholder="SubCategory"
+                                            value={dataCreated.subCategory}
+                                            onChange={handleChange}
+                                        >
+                                            <option value=""></option>
+                                            <option value="Ativo">Ativo</option>
+                                            <option value="Passivo">Passivo</option>
+                                        </select>
+                                    </div>
+                                </fieldset>
+                            </form>
+                        </div>
+                        {error && <div className="alert alert-danger">{error}</div>}
+                        {/* {success && <div className="alert alert-success">Conta atualizada com sucesso!</div>} */}
+                        <div className="modal-footer">
+                            <button type="button" className="btn btn-secondary" onClick={handleClose}>Cancelar</button>
+                            <button type="button" className="btn btn-primary" onClick={handleSave}>Salvar</button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 

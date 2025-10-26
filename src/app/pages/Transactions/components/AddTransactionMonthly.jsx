@@ -1,160 +1,210 @@
-import React, { useEffect, useState } from "react";
-import { createAccount } from "../../../../services/api/retornoApi/ApiAccount";
-import { getCategories } from "../../../../services/api/retornoApi/ApiCategory"
+import React, { useEffect, useMemo, useState } from "react";
 import { Alert } from "../../../../components/functions/alert";
-import { formatCurrency } from "../../../../components/functions/mask";
-import { removeFormatCurrency } from "../../../../components/functions/mask"
 import { getAccounts } from "../../../../services/api/retornoApi/ApiAccount";
 import { createTransaction } from "../../../../services/api/retornoApi/ApiTransaction";
 import { getTransactionByDate } from "../../../../services/api/retornoApi/ApiTransaction";
-import { formatDate } from "../../../../components/functions/mask";
+import { formatCurrency, removeFormatCurrency, formatDate } from "../../../../components/functions/mask";
+import { VscChromeClose } from "react-icons/vsc";
 
 function AddTransactionMonthly({ date, closeModal }) {
+  const [alert, setAlert] = useState({ type: "", message: "" });
+  const [saving, setSaving] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
-    const [dataCreated, setDataCreated] = useState({ name: "", value: "", categoryid: "" });
-    const [alert, setAlert] = useState({ type: "", message: "" });
-    const [error, setError] = useState("");
-    const [success, setSuccess] = useState(false);
-    const { accounts, errorac } = getAccounts();
-    const [accountsChecked, setAccountsChecked] = useState([]);
-    const { transactions, erroMonthly } = getTransactionByDate(date);
+  const { accounts = [] } = getAccounts();
+  const { transactions = [] } = getTransactionByDate(date);
 
-    useEffect(() => {
-        transactions.map(transaction => {
-            const element = document.getElementById(`check-box${transaction.idAccount}`)
-            if (element)
-                element.setAttribute('disabled', true);
-        })
+  // Conjunto de contas que já possuem transação no mês → checkbox desabilitado
+  const disabledIds = useMemo(() => {
+    const s = new Set();
+    transactions.forEach(t => s.add(t.idAccount));
+    return s;
+  }, [transactions]);
+
+  // Apenas as contas que podem ser marcadas (“selecionáveis”)
+  const selectableAccounts = useMemo(
+    () => accounts.filter(a => !disabledIds.has(a.id)),
+    [accounts, disabledIds]
+  );
+
+  const allSelected = useMemo(
+    () => selectableAccounts.length > 0 && selectableAccounts.every(a => selectedIds.has(a.id)),
+    [selectableAccounts, selectedIds]
+  );
+
+  const selectedCount = selectedIds.size;
+
+  const showError = (msg) => {
+    setAlert({ type: "error", message: msg });
+    setTimeout(() => setAlert({ type: "", message: "" }), 6000);
+  };
+
+  const showSuccess = (msg) => {
+    setAlert({ type: "success", message: msg });
+    setTimeout(() => setAlert({ type: "", message: "" }), 4000);
+  };
+
+  const toggleOne = (accountId) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(accountId)) next.delete(accountId);
+      else next.add(accountId);
+      return next;
     });
+  };
 
-    const handleChange = (event, account) => {
-        const json = {
-            date: formatDate(date),
-            name: account.name,
-            idAccount: account.id,
-            value: account.value,
-            status: "PENDENTE",
-            checked: event.target.checked
-        }
-        const existingAccountIndex = accountsChecked.findIndex(c => c.idAccount === account.id);
+  const toggleAll = () => {
+    setSelectedIds(prev => {
+      // se já está tudo selecionado, desmarca todos; caso contrário, marca todos os habilitados
+      if (allSelected) return new Set();
+      return new Set(selectableAccounts.map(a => a.id));
+    });
+  };
 
-        if (existingAccountIndex >= 0) {
-            setAccountsChecked(prevState => {
-                const updatedAccounts = [...prevState];
-                updatedAccounts[existingAccountIndex] = json;
-                return updatedAccounts;
-            });
-        } else {
-            // Se o item não existir, adicione-o ao array
-            setAccountsChecked(prevState => [...prevState, json]);
-        }
-    };
+  const handleClose = () => closeModal();
 
-    const handleClose = () => {
-        closeModal();
-    };
-    const handleSave = async () => {
-        // Inicializa uma variável para armazenar os resultados
-        let successCount = 0;
-        let errorCount = 0;
+  const handleSave = async () => {
+    if (selectedIds.size === 0) {
+      showError("Por favor, selecione ao menos uma conta!");
+      return;
+    }
 
-        // Verifica se pelo menos uma conta foi selecionada
-        if (accountsChecked.length === 0) {
-            setError("Por favor, selecione ao menos uma conta!");
-            return;
-        }
+    setSaving(true);
+    const payloads = accounts
+      .filter(acc => selectedIds.has(acc.id))
+      .map(acc => ({
+        date: formatDate(date),
+        name: acc.name,
+        idAccount: acc.id,
+        value: removeFormatCurrency(acc.value),
+        status: "PENDENTE",
+      }));
 
-        // Itera sobre as contas selecionadas e processa cada uma
-        for (const account of accountsChecked) {
-            // Filtra as transações relacionadas à conta
-            const transaction = transactions.filter(a => a.idAccount);
+    let successCount = 0;
+    let errorCount = 0;
 
-            // Verifica se a conta está marcada e se há transações
-            if (account.checked && transaction.length >= 0) {
-                account.value = removeFormatCurrency(account.value);
-                account.date = formatDate(date);
+    // executa uma por uma para manter comportamento e mensagens previsíveis
+    for (const p of payloads) {
+      try {
+        const { account: created } = await createTransaction(p);
+        if (created) successCount++;
+        else errorCount++;
+      } catch {
+        errorCount++;
+      }
+    }
 
-                // Chama a função para criar a transação e aguarda a resposta
-                const { account: updatedAccount, error } = await createTransaction(account);
+    setSaving(false);
 
-                // Se a transação foi bem-sucedida, incrementa o contador de sucesso
-                if (updatedAccount) {
-                    successCount++;
-                } else {
-                    errorCount++;
-                }
-            }
-        }
+    if (successCount > 0) {
+      showSuccess(`${successCount} ${successCount === 1 ? "conta adicionada" : "contas adicionadas"} com sucesso.`);
+      closeModal(); // fecha como você já fazia
+    }
+    if (errorCount > 0) {
+      showError("Houve erros ao processar algumas contas.");
+    }
+  };
 
-        // Se todas as contas foram processadas corretamente, mostra o sucesso
-        if (successCount > 0) {
-            setSuccess(true);
-            closeModal();
-            console.log(`${successCount} contas adicionadas com sucesso`);
-        }
+  return (
+    <>
+    <div className="modal-backdrop show my-backdrop"></div>
+    <div className="modal show" tabIndex="-1" role="dialog" style={{ display: "block" }}>
+      {alert.message && <Alert type={alert.type} message={alert.message} />}
+      <div className="modal-dialog modal-lg" role="document">
+        <div className="modal-content">
+          <div className="modal-header">
+            {/* Se estiver em Bootstrap 5, pode trocar para btn-close */}
+            <h4 className="modal-title m-0">Contas cadastradas</h4>
+            <button type="button" className="btn btn-close" aria-label="Close" onClick={handleClose}>
+            </button>
+          </div>
 
-        // Se houver algum erro, mostra uma mensagem de erro
-        if (errorCount > 0) {
-            setError("Houve erros ao processar algumas contas.");
-        }
-    };
-
-
-    return (
-        <div className="modal show" tabIndex="-1" role="dialog" style={{ display: 'block' }}>
-            {alert.message && <Alert type={alert.type} message={alert.message} />}
-            <div className="modal-dialog" role="document">
-
-                <div className="modal-content">
-                    <div className="modal-header">
-                        <button type="button" className="close" data-dismiss="modal" aria-label="Close" onClick={handleClose}>
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                        <h4>Add Account Monthly</h4>
-                    </div>
-                    <div className="modal-body">
-                        <table className="table table-hover">
-                            <thead>
-                                <tr className="info colorwhite">
-                                    <th>
-                                        Name
-                                    </th>
-                                    <th>
-                                        Value
-                                    </th>
-                                    <th>
-
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {accounts && accounts.map((acc, index) => (
-                                    <tr key={index}>
-                                        <th>
-                                            {acc.name}
-                                        </th>
-                                        <th>
-                                            {formatCurrency(acc.value)}
-                                        </th>
-                                        <th>
-                                            <input type="checkbox" id={`check-box${acc.id}`} onChange={(event) => handleChange(event, acc)} />
-                                        </th>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {error && <div className="alert alert-danger">{error}</div>}
-                    {success && <div className="alert alert-success">Conta atualizada com sucesso!</div>}
-                    <div className="modal-footer">
-                        <button type="button" className="btn btn-secondary" onClick={handleClose}>Close</button>
-                        <button type="button" className="btn btn-primary" onClick={handleSave}>ADICIONAR ITENS</button>
-                    </div>
-                </div>
+          <div className="modal-body">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <div className="form-check">
+                <input
+                  id="check-all"
+                  className="form-check-input"
+                  type="checkbox"
+                  onChange={toggleAll}
+                  checked={allSelected && selectableAccounts.length > 0}
+                  disabled={selectableAccounts.length === 0}
+                />
+                <label className="form-check-label" htmlFor="check-all">
+                  Selecionar todos ({selectableAccounts.length})
+                </label>
+              </div>
+              <small className="text-muted">
+                Selecionados: <strong>{selectedCount}</strong>
+              </small>
             </div>
+
+            <div className="table-responsive">
+              <table className="table table-hover align-middle">
+                <thead>
+                  <tr className="info colorwhite">
+                    <th style={{ width: 48 }}></th>
+                    <th>Nome</th>
+                    <th className="text-nowrap">Valor</th>
+                    {/* <th className="text-nowrap">Status no mês</th> */}
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts && accounts.length > 0 ? (
+                    accounts.map((acc) => {
+                      const disabled = disabledIds.has(acc.id);
+                      const checked = selectedIds.has(acc.id);
+                      return (
+                        <tr key={acc.id} className={disabled ? "text-muted" : ""}>
+                          <td>
+                            <input
+                              type="checkbox"
+                              className="form-check-input"
+                              disabled={disabled}
+                              checked={checked}
+                              onChange={() => toggleOne(acc.id)}
+                              aria-label={`Selecionar conta ${acc.name}`}
+                            />
+                          </td>
+                          <td>{acc.name}</td>
+                          <td>{formatCurrency(acc.value)}</td>
+                          {/* <td>
+                            {disabled ? (
+                              <span className="badge bg-secondary">
+                                já adicionada neste mês
+                              </span>
+                            ) : (
+                              <span className="badge bg-primary-lt">disponível</span>
+                            )}
+                          </td> */}
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={4} className="text-center text-muted py-4">
+                        Nenhuma conta encontrada.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={handleClose} disabled={saving}>
+              Fechar
+            </button>
+            <button type="button" className="btn btn-primary" onClick={handleSave} disabled={saving || selectedIds.size === 0}>
+              {saving ? "Adicionando..." : "ADICIONAR ITENS"}
+            </button>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+    </>
+  );
 }
 
 export default AddTransactionMonthly;

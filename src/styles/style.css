@@ -14,3 +14,7 @@
 .main, .body, .page{
     background-color: #f5f7fa!important;
 }
+.modal-backdrop {
+  --bs-backdrop-bg: #0b1324;
+  --bs-backdrop-opacity: 0.75;
+}
