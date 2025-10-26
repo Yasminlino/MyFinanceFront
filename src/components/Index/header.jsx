@@ -1,7 +1,7 @@
 // src/components/Header/Header.jsx
 import React, { useState } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";   // 👈 seu contexto
+import { useAuth } from "../../services/context/AuthContext";   // 👈 seu contexto
 // Ícones (Tabler) — opcional:
 import { IconHome, IconCategory, IconCreditCard, IconUserCircle } from "@tabler/icons-react";
 // Logo (ajuste o caminho se necessário)

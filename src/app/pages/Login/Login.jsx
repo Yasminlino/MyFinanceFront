@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiAccount } from "../api/api";
-import { useAuth } from "../context/AuthContext";
+import { apiAccount } from "../../../services/api/api";
+import { useAuth } from "../../../services/context/AuthContext";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import RegisterUser from "../routes/Modals/Register/RegisterUser";
+import RegisterUser from "./components/RegisterUser";
 // import logo from "../assets/logo.webp"; // opcional: troque o caminho se tiver um logo
 
 export default function Login() {

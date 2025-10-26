@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import Create from "../Modals/Category/Create";
-import { getCategories, deleteCategory } from "../../api/retornoApi/ApiCategory";
-import { Alert } from "../functions/alert";
+import Create from "./components/Create";
+import { getCategories, deleteCategory } from "../../../services/api/retornoApi/ApiCategory";
+import { Alert } from "../../../components/functions/alert";
 import { MdDelete } from "react-icons/md";
-import PageHeader from "../../components/PageHeader";
+import PageHeader from "../../pages/Login/PageHeader";
 
 function Categories() {
     const { categories, error } = getCategories();

@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
-import Create from "../Modals/Account/Create";
-import Update from "../Modals/Account/Update";
-import { getAccounts } from "../../api/retornoApi/ApiAccount";
-import { getCategories } from "../../api/retornoApi/ApiCategory";
-import { deleteAccount } from "../../api/retornoApi/ApiAccount";
-import { Alert } from "../functions/alert";
-import { formatCurrency } from "../functions/mask";
+import Create from "./components/Create";
+import Update from "./components/Update";
+import { getAccounts } from "../../../services/api/retornoApi/ApiAccount";
+import { getCategories } from "../../../services/api/retornoApi/ApiCategory";
+import { deleteAccount } from "../../../services/api/retornoApi/ApiAccount";
+import { Alert } from "../../../components/functions/alert";
+import { formatCurrency } from "../../../components/functions/mask";
 import { RiStickyNoteAddFill } from "react-icons/ri";
 import { FaEdit } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
-import PageHeader from "../../components/PageHeader"; // 👈 usa o header
+import PageHeader from "../../pages/Login/PageHeader";
 
 function Account() {
     const { accounts, error } = getAccounts();

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { updateAccount } from "../../../api/retornoApi/ApiAccount";
-import { getCategories } from "../../../api/retornoApi/ApiCategory";
-import { formatCurrency } from "../../functions/mask";
-import { removeFormatCurrency } from "../../functions/mask";
+import { updateAccount } from "../../../../services/api/retornoApi/ApiAccount";
+import { getCategories } from "../../../../services/api/retornoApi/ApiCategory";
+import { formatCurrency, removeFormatCurrency } from "../../../../components/functions/mask";
 
 function Update({ account, closeModal }) {
     const [dados, setDados] = useState({ id: "", name: "", value: "", categoryid: "" })

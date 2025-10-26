@@ -2,16 +2,16 @@
 import React from "react";
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 
-import Header from "./routes/Index/header";
-import Footer from "./routes/Index/footer";
+import Header from "./components/Index/header";
+import Footer from "./components/Index/footer";
 
-import Home from "./routes/pages/Home";
-import Category from "./routes/pages/Category";
-import Account from "./routes/pages/Account";
-import Transaction from "./routes/pages/Transaction";
-import Login from "./components/Login";
+import Home from "./app/pages/Home/Home";
+import Category from "./app/pages/Categories/Category";
+import Account from "./app/pages/Accounts/Account";
+import Transaction from "./app/pages/Transactions/Transaction";
+import Login from "./app/pages/Login/Login";
 
-import { useAuth } from "./context/AuthContext";
+import { useAuth } from "./services/context/AuthContext";
 
 // ---------- Rota protegida ----------
 const ProtectedRoute = ({ children }) => {

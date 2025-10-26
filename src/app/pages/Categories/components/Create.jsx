@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createCategory } from "../../../api/retornoApi/ApiCategory";
+import { createCategory } from "../../../../services/api/retornoApi/ApiCategory";
 
 function Create({ closeModal }) {
 
