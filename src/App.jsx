@@ -46,8 +46,6 @@ const AppShell = () => {
             path="/home"
             element={
               <ProtectedRoute>
-                <div className="tw-bg-indigo-500 tw-text-white tw-p-4 tw-rounded-lg">TESTE TAILWIND</div>
-
                 <Home />
               </ProtectedRoute>
             }

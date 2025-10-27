@@ -35,15 +35,27 @@ export function getCategories() {
     return { categories, errorCategories };
 }
 
+// services/api/retornoApi/ApiCategory.js
 export async function updateCategory(category) {
-    try {
-        const response = await api.put(`/UpdateCategory/${category.id}`, category);
-        return { categories: response.data, error: null }; // Retorna os dados ou erro
-    } catch (error) {
-        console.log("Erro ao atualizar a categoria", error);
-        return { categories: null, error: error.message }; // Retorna o erro
-    }
+  try {
+    // 🔴 use PascalCase para casar com o DTO
+    const payload = {
+      Id: category.id,
+      Name: category.name,
+      SubCategory: category.subCategory,
+    };
+
+    const response = await api.put(`UpdateCategory`, payload, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    return { data: response.data, error: null };
+  } catch (error) {
+    console.log("Erro ao atualizar a categoria", error);
+    return { data: null, error: error.message };
+  }
 }
+
 
 export async function deleteCategory(category) {
     try {
