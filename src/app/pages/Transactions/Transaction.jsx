@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import "./transaction.css"
-// import { getAccountsGrouping } from "../../api/retornoApi/ApiAccount";
+import "./transaction.css";
 import {
   formatCurrency,
   formatDate,
@@ -21,22 +20,18 @@ import { RiStickyNoteAddFill } from "react-icons/ri";
 import { MdDelete } from "react-icons/md";
 import { GrUpdate } from "react-icons/gr";
 import CreateTransaction from "./components/Create";
-import { FaEdit } from "react-icons/fa";
-import { FiCalendar, FiLock, FiUnlock, FiChevronDown } from "react-icons/fi";
-import { Tooltip, Collapse } from "bootstrap"; // já vem com bootstrap bundle
+import { FiLock, FiUnlock, FiChevronDown } from "react-icons/fi";
+import { Tooltip, Collapse } from "bootstrap";
 
 export default function Transaction() {
-  // ---- Constantes de UI / Dados
   const STATUS = ["", "PENDENTE", "PAGO NO PRAZO", "AGUARDANDO", "PAGO ATRASADO"];
   const FIELD_IDS = ["name", "value", "month", "status"];
 
-  // 👉 mês atual em YYYY-MM (ex.: 2025-09)
   const defaultMonth = `${new Date().getFullYear()}-${String(
     new Date().getMonth() + 1
   ).padStart(2, "0")}`;
 
-  // ---- Estados
-  const [transactions, setTransactions] = useState([]);
+  const [transactions, setTransactions] = useState([]); // [{ categoryId, categoryName, subCategory, accounts: [...] }, ...]
   const [transactionMonthly, setTransactionMonthly] = useState([]);
   const [showModalCreate, setShowModalCreate] = useState(false);
   const [showModalAdd, setShowModalAdd] = useState(false);
@@ -51,22 +46,17 @@ export default function Transaction() {
     return map;
   }, [transactionMonthly]);
 
-  // ...existing code...
+  // tooltips + collapse init
   useEffect(() => {
-    // tooltips
     const triggers = document.querySelectorAll('[data-bs-toggle="tooltip"]');
     const tips = [...triggers].map((el) => new Tooltip(el));
 
-    // collapse (garante que, em SPA, os targets sejam inicializados)
     const collapseBtns = document.querySelectorAll('[data-bs-toggle="collapse"]');
     const collapseInstances = [];
     collapseBtns.forEach((btn) => {
-      const selector = btn.getAttribute('data-bs-target') || btn.getAttribute('href');
+      const selector = btn.getAttribute("data-bs-target") || btn.getAttribute("href");
       const target = selector && document.querySelector(selector);
-      if (target) {
-        // não fazer toggle automático, só garantir a instância
-        collapseInstances.push(new Collapse(target, { toggle: false }));
-      }
+      if (target) collapseInstances.push(new Collapse(target, { toggle: false }));
     });
 
     return () => {
@@ -75,7 +65,7 @@ export default function Transaction() {
     };
   }, []);
 
-  // ---- Efeitos
+  // flata transações para edição
   useEffect(() => {
     const initialData = transactions.flatMap((category) =>
       category.accounts.flatMap((account) =>
@@ -89,6 +79,8 @@ export default function Transaction() {
           status: transaction.status,
           statusSalvo: transaction.status,
           categoryName: category.categoryName,
+          // se quiser usar subCategory aqui também:
+          subCategory: category.subCategory || "", // <- opcional
           desbloqueiaCampos: false,
         }))
       )
@@ -102,13 +94,11 @@ export default function Transaction() {
     setTransactions(data || []);
   };
 
-  // 👉 carrega automaticamente o mês atual na primeira montagem
   useEffect(() => {
     handleDateChange({ target: { value: defaultMonth } });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ---- Helpers
   const openWithValidation = (setter) => {
     const v = document.getElementById("dateFilter")?.value;
     if (!v) {
@@ -179,11 +169,11 @@ export default function Transaction() {
         prev.map((t) =>
           t.id === id
             ? {
-              ...t,
-              status: dados.status,
-              statusSalvo: dados.status,
-              desbloqueiaCampos: dados.status === "PENDENTE" ? t.desbloqueiaCampos : false,
-            }
+                ...t,
+                status: dados.status,
+                statusSalvo: dados.status,
+                desbloqueiaCampos: dados.status === "PENDENTE" ? t.desbloqueiaCampos : false,
+              }
             : t
         )
       );
@@ -217,7 +207,6 @@ export default function Transaction() {
     );
   };
 
-  // ---- UI helpers (Bootstrap/Tabler)
   const renderStatus = (s) => {
     const map = {
       "": "badge bg-secondary",
@@ -229,6 +218,45 @@ export default function Transaction() {
     return <span className={map[s] || "badge bg-secondary"}>{s || "—"}</span>;
   };
 
+  // === NOVO: ordenar categorias (Ativo -> Passivo -> demais)
+  const sortedTransactions = useMemo(() => {
+    const rank = (sub) => {
+      const s = String(sub || "").toLowerCase();
+      if (s === "receita" || s === "receitas") return 0;
+      if (s === "despesa" || s === "despesas") return 1;
+      return 2;
+    };
+    return [...(transactions || [])].sort((a, b) => {
+      const ra = rank(a.subCategory /* ou a.categoryType */);
+      const rb = rank(b.subCategory /* ou b.categoryType */);
+      if (ra !== rb) return ra - rb;
+      return String(a.categoryName || "").localeCompare(String(b.categoryName || ""));
+    });
+  }, [transactions]);
+
+  // === NOVO: resumo (Total Ativo, Total Passivo, Restante)
+  const totals = useMemo(() => {
+    let receita = 0;
+    let despesa = 0;
+    // Mapa categoryId -> subCategory para cruzar com transactionMonthly
+    const subByCat = new Map(
+      (transactions || []).map((c) => [c.categoryId, c.subCategory /* ou c.categoryType */])
+    );
+
+    transactionMonthly.forEach((item) => {
+      const sub = String(subByCat.get(item.categoryId) || "").toLowerCase();
+      const val = Number(removeFormatCurrency(item.value)) || 0;
+      if (sub === "receita" || sub === "receitas") receita += val;
+      else if (sub === "despesa" || sub === "despesas") despesa += val;
+    });
+
+    return {
+      receita,
+      despesa,
+      restante: receita - despesa,
+    };
+  }, [transactionMonthly, transactions]);
+
   return (
     <div className="page-body">
       {alert.message && <Alert type={alert.type} message={alert.message} />}
@@ -237,16 +265,13 @@ export default function Transaction() {
       <div className="">
         <div className="container-xl">
           <div className="row g-2 align-items-center">
-            {/* Esquerda menor */}
             <div className="col-12 col-lg-4">
               <div className="page-pretitle">Financeiro</div>
               <h2 className="page-title">Transações</h2>
             </div>
 
-            {/* Direita maior */}
             <div className="col-12 col-lg-8 d-print-none">
               <div className="d-flex justify-content-end gap-2 flex-wrap">
-                {/* input mês continua sempre visível */}
                 <div className="input-icon">
                   <input
                     className="form-control"
@@ -258,7 +283,6 @@ export default function Transaction() {
                   />
                 </div>
 
-                {/* botão toggle para mostrar/ocultar ações */}
                 <button
                   className="btn btn-outline-secondary"
                   type="button"
@@ -270,8 +294,8 @@ export default function Transaction() {
                 >
                   <VscFoldDown />
                 </button>
-
               </div>
+
               <div className="collapse" id="toolbarCollapse">
                 <div className="d-flex justify-content-end mt-2">
                   <div className="btn-list">
@@ -287,10 +311,39 @@ export default function Transaction() {
                   </div>
                 </div>
               </div>
-            </div>
 
+            </div>
           </div>
 
+          {/* ======= NOVO: CARD RESUMO ======= */}
+          <div className="row g-3 mt-2">
+            <div className="col-12">
+              <div className="card">
+                <div className="card-body d-flex flex-wrap gap-4 align-items-center">
+                  <div>
+                    <div className="text-muted small">Total Receita</div>
+                    <div className="fw-bold fs-4">{formatCurrency(totals.receita)}</div>
+                  </div>
+                  <div className="vr" />
+                  <div>
+                    <div className="text-muted small">Total despesa</div>
+                    <div className="fw-bold fs-4">{formatCurrency(totals.despesa)}</div>
+                  </div>
+                  <div className="vr" />
+                  <div>
+                    <div className="text-muted small">Restante (Receita − Despesa)</div>
+                    <div className={`fw-bold fs-4 ${totals.restante < 0 ? "text-danger" : "text-success"}`}>
+                      {formatCurrency(totals.restante)}
+                    </div>
+                  </div>
+                  <div className="ms-auto text-muted small">
+                    {transactionMonthly.length} {transactionMonthly.length === 1 ? "lançamento" : "lançamentos"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* ======= /CARD RESUMO ======= */}
         </div>
       </div>
 
@@ -302,26 +355,19 @@ export default function Transaction() {
             <div className="card-body text-center text-secondary py-5">
               <div className="mb-3 fs-1">🧾</div>
               <h3 className="mb-1">Nenhuma transação encontrada</h3>
-              <p className="text-muted">
-                Comece adicionando sua primeira transação para este mês.
-              </p>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => handleToolbar("create")}
-              >
+              <p className="text-muted">Comece adicionando sua primeira transação para este mês.</p>
+              <button type="button" className="btn btn-primary" onClick={() => handleToolbar("create")}>
                 <RiStickyNoteAddFill className="me-1" />
                 Adicionar transação
               </button>
             </div>
           </div>
         )}
-        {/* Categorias */}
-        {transactions?.map((category) => {
+
+        {/* Categorias (ordenadas) */}
+        {sortedTransactions.map((category) => {
           const collapseId = `cat-${category.categoryId}`;
-          const rows = transactionMonthly.filter(
-            (c) => c.categoryId === category.categoryId
-          );
+          const rows = transactionMonthly.filter((c) => c.categoryId === category.categoryId);
 
           return (
             <div className="card card-stacked mb-3" key={category.categoryId}>
@@ -339,15 +385,16 @@ export default function Transaction() {
                     <FiChevronDown />
                   </button>
                   <h3 className="card-title m-0">
-                    {String(category.categoryName || "").toUpperCase()}
+                    {String(category.categoryName || "").toUpperCase()}{" "}
+                    {category.subCategory && (
+                      <span className="badge bg-secondary ms-2">{category.subCategory}</span>
+                    )}
                   </h3>
                 </div>
 
                 <div className="card-actions text-end">
                   <div className="text-muted small">Valor Previsto</div>
-                  <div className="fw-bold fs-5">
-                    {sumByCategory(category.categoryId)}
-                  </div>
+                  <div className="fw-bold fs-5">{sumByCategory(category.categoryId)}</div>
                 </div>
               </div>
 
@@ -484,8 +531,7 @@ export default function Transaction() {
                       return (
                         <div
                           key={account.id}
-                          className={`border rounded-3 p-3 mb-3 ${readOnly ? "bg-body-tertiary" : ""
-                            }`}
+                          className={`border rounded-3 p-3 mb-3 ${readOnly ? "bg-body-tertiary" : ""}`}
                         >
                           <div className="d-flex justify-content-between align-items-center mb-2">
                             <h4 className="h6 m-0 text-uppercase">
@@ -525,7 +571,7 @@ export default function Transaction() {
                               </div>
                             </div>
                             <div className="col-6">
-                              <label className="form-label mb-1 small">Vencimento</label>
+                              <label className="form-label mb-1 small">{category.subCategory == "Despesa" ? "Data Vencimento" : "Data recebimento" }</label>
                               <input
                                 type="date"
                                 value={formatDate(account.month)}
@@ -590,20 +636,18 @@ export default function Transaction() {
                     </div>
                   )}
                 </div>
-
-                {/* Footer */}
               </div>
-                <div className="card-footer d-flex align-items-center justify-content-between">
-                  <div className="text-muted small">
-                    {rows.length} {rows.length === 1 ? "item" : "itens"}
-                  </div>
-                  <div className="d-flex align-items-center gap-2">
-                    <span className="text-muted">Total</span>
-                    <span className="badge bg-primary-lt fs-5">
-                      {sumByCategory(category.categoryId)}
-                    </span>
-                  </div>
+
+              {/* Footer da categoria */}
+              <div className="card-footer d-flex align-items-center justify-content-between">
+                <div className="text-muted small">
+                  {rows.length} {rows.length === 1 ? "item" : "itens"}
                 </div>
+                <div className="d-flex align-items-center gap-2">
+                  <span className="text-muted">Total</span>
+                  <span className="badge bg-primary-lt fs-5">{sumByCategory(category.categoryId)}</span>
+                </div>
+              </div>
             </div>
           );
         })}
@@ -615,9 +659,7 @@ export default function Transaction() {
           />
         )}
 
-        {showModalCreate && (
-          <CreateTransaction closeModal={() => setShowModalCreate(false)} />
-        )}
+        {showModalCreate && <CreateTransaction closeModal={() => setShowModalCreate(false)} />}
       </div>
     </div>
   );

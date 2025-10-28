@@ -8,7 +8,7 @@ function Create({ closeModal }) {
     let { categories, errorCart } = getCategories();
     // categories = categories.filter(c => c.status == "Ativa");
 
-    const [dataCreated, setDataCreated] = useState({ name: "", value: "", categoryid: "" });
+    const [dataCreated, setDataCreated] = useState({ name: "", value: "", categoryid: "", dataOperacao: "" });
     const [alert, setAlert] = useState({ type: "", message: "" });
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
@@ -40,7 +40,16 @@ function Create({ closeModal }) {
             const value = event.target.value;
             setDataCreated((prevData) => ({
                 ...prevData,
-                [campo]: value,  // Atualiza a propriedade correta no objeto dataCreated
+                [campo]: Numbervalue,  // Atualiza a propriedade correta no objeto dataCreated
+            }));
+            return;
+        }
+        
+        if (campo === "dataOperacao") {
+            const value = event.target.value;
+            setDataCreated((prevData) => ({
+                ...prevData,
+                [campo]: Number(value),
             }));
             return;
         }
@@ -48,7 +57,7 @@ function Create({ closeModal }) {
         const { value } = event.target;
         setDataCreated((prevData) => ({
             ...prevData,
-            [campo]: value,  // Atualiza a propriedade correta no objeto dataCreated
+            [campo]: value,  
         }));
     };
 
@@ -113,6 +122,7 @@ function Create({ closeModal }) {
                                             value={dataCreated.name}
                                             onChange={handleChange("name")}
                                         />
+                                        <br />
                                         <label className="control-label">Value</label>
                                         <input
                                             type="text"
@@ -123,7 +133,7 @@ function Create({ closeModal }) {
                                             value={dataCreated.value}
                                             onChange={handleChange("value")}
                                         />
-
+                                        <br />
                                         <label className="control-label">Category</label>
                                         <select
                                             className="form-control"
@@ -136,8 +146,21 @@ function Create({ closeModal }) {
                                                 <option key={category.id} id={category.id} value={category.name}>{category.name}</option>
                                             ))}
                                         </select>
+                                        < br />
+                                        <label >Dia vencimento</label>
+                                        <input
+                                            type="number"
+                                            max="31"
+                                            min="1"
+                                            id="dataOperacao"
+                                            className="form-control"
+                                            required
+                                            placeholder=""
+                                            value={dataCreated.dataOperacao}
+                                            onChange={handleChange('dataOperacao')}
+                                        />
 
-                                        <div className="form-group-aligment">
+                                        {/* <div className="form-group-aligment">
                                             <div className="form-control50">
                                                 <label className="control-label">Possui Parcelas?</label>
                                                 <select
@@ -181,7 +204,7 @@ function Create({ closeModal }) {
                                                 }
 
                                             </div>
-                                        </div>
+                                        </div> */}
 
                                     </div>
                                 </fieldset>

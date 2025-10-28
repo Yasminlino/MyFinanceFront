@@ -69,10 +69,11 @@ function Create({ closeModal }) {
                                             className="form-control"
                                             required
                                             placeholder="Name Category"
-                                            value={dataCreated.name}  // Bind input value to state
+                                            value={dataCreated.name}
                                             onChange={handleChange}
                                         />
-                                        <label className="control-label">SubCategory</label>
+                                        <br />
+                                        <label className="control-label">Tipo da categoria</label>
                                         <select
                                             className="form-control"
                                             id="subCategory"
@@ -81,9 +82,9 @@ function Create({ closeModal }) {
                                             onChange={handleChange}
                                         >
                                             <option value=""></option>
-                                            <option value="Ativo">Ativo</option>
-                                            <option value="Passivo">Passivo</option>
-                                        </select>
+                                            <option value="Receita">Receita</option>
+                                            <option value="Despesa">Despesa</option>
+                                        </select>                                        
                                     </div>
                                 </fieldset>
                             </form>
